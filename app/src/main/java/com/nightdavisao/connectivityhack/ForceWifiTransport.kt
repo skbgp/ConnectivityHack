@@ -25,7 +25,7 @@ class ForceWifiTransport : IXposedHookZygoteInit {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val transport = param.args[0] as Int
                         if (transport == transportWifi) {
-                            param.result = true
+                            param.result = false
                             XposedBridge.log("ForceWifiTransport: returning true for hasTransport(WIFI)")
                         }
                     }
