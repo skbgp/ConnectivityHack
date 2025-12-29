@@ -14,7 +14,12 @@ class ForceWifiTransport : IXposedHookZygoteInit {
     override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
         try {
             val ncClass = XposedHelpers.findClass(NC_CLASS, null)
-            val transportWifi = XposedHelpers.getStaticIntField(ncClass, "TRANSPORT_WIFI") as Int
+
+            // get constants
+            val transportWifi =
+                XposedHelpers.getStaticIntField(ncClass, "TRANSPORT_WIFI") as Int
+            val transportCell =
+                XposedHelpers.getStaticIntField(ncClass, "TRANSPORT_CELLULAR") as Int
 
             XposedHelpers.findAndHookMethod(
                 NC_CLASS,
@@ -22,19 +27,31 @@ class ForceWifiTransport : IXposedHookZygoteInit {
                 "hasTransport",
                 Int::class.javaPrimitiveType,
                 object : XC_MethodHook() {
+
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val transport = param.args[0] as Int
-                        if (transport == transportWifi) {
-                            param.result = false
-                            XposedBridge.log("ForceWifiTransport: returning true for hasTransport(WIFI)")
+
+                        when (transport) {
+
+                            // force WIFI -> false
+                            transportWifi -> {
+                                param.result = false
+                                XposedBridge.log("ForceWifiTransport: WIFI forced FALSE")
+                            }
+
+                            // force CELLULAR -> true
+                            transportCell -> {
+                                param.result = true
+                                XposedBridge.log("ForceWifiTransport: CELLULAR forced TRUE")
+                            }
                         }
                     }
                 }
             )
 
-            XposedBridge.log("ForceWifiTransport: hook installed. TRANSPORT_WIFI=$transportWifi")
+            XposedBridge.log("ForceWifiTransport: hooks installed")
         } catch (t: Throwable) {
-            XposedBridge.log("ForceWifiTransport: failed to hook hasTransport: $t")
+            XposedBridge.log("ForceWifiTransport: failed: $t")
         }
     }
 }
